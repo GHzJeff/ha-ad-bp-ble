@@ -1,0 +1,58 @@
+# Automation: log every A&D reading to a CSV file and a rolling "log" sensor.
+#
+# The integration fires one `ad_bp_ble_reading` event per reading the monitor sends
+# (including readings stored on the monitor while Home Assistant couldn't reach it).
+# Event data: address, time (ISO local), systolic, diastolic, pulse.
+#
+# Two people / two monitors: readings are routed by the monitor's Bluetooth address.
+# Replace AA:BB:CC:DD:EE:FF with YOUR monitor's address (shown on the device page in
+# Settings > Devices & services > A&D Blood Pressure BLE). Any other A&D monitor is
+# treated as "person2". With only one monitor, leave it as is; everything goes to "person1".
+#
+# Paste into automations.yaml (or create a new automation and switch to YAML mode).
+
+- id: bp_log_reading
+  alias: Blood Pressure - Log Reading
+  description: Appends each A&D reading to /config/bp/*.csv and the Blood Pressure Log sensor.
+  mode: queued
+  max: 50
+  triggers:
+    - trigger: event
+      event_type: ad_bp_ble_reading
+  actions:
+    - variables:
+        t: "{{ trigger.event.data.time }}"
+        person: >-
+          {{ 'person1' if (trigger.event.data.address | default('') | upper)
+             in ['AA:BB:CC:DD:EE:FF', ''] else 'person2' }}
+        log_sensor: >-
+          {{ 'sensor.blood_pressure_log' if person == 'person1'
+             else 'sensor.blood_pressure_log_person2' }}
+        s: "{{ trigger.event.data.systolic | int(0) }}"
+        d: "{{ trigger.event.data.diastolic | int(0) }}"
+        p: "{{ trigger.event.data.pulse | int(0) }}"
+    # skip empty/invalid readings
+    - condition: template
+      value_template: "{{ s > 0 and d > 0 }}"
+    # the monitor can resend readings HA already has; skip those
+    - condition: template
+      value_template: >-
+        {% set r = state_attr(log_sensor, 'readings') or [] %}
+        {{ r | selectattr('t', 'eq', t) | list | count == 0 }}
+    - action: shell_command.bp_log_append
+      data:
+        ts: "{{ t }}"
+        sys: "{{ s }}"
+        dia: "{{ d }}"
+        pulse: "{{ p }}"
+        person: "{{ person }}"
+    - event: bp_reading
+      event_data:
+        t: "{{ t }}"
+        s: "{{ s }}"
+        d: "{{ d }}"
+        p: "{{ p }}"
+        person: "{{ person }}"
+    # give the log sensor time to update before the next queued reading is checked
+    - delay:
+        seconds: 1

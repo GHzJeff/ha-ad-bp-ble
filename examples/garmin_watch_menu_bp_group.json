@@ -1,0 +1,50 @@
+{
+ "_comment": "Group item for the GarminHomeAssistant watch app (house-of-abbey). Add this object to the 'items' array of your menu.json. Shows the latest reading plus the daily average for each of the last 7 days ('--' = no reading). After editing menu.json, add/bump a ?v=N query on the menu URL in the app settings, because HA serves /local files with a 31-day cache.",
+ "item": {
+  "name": "Blood Pressure",
+  "title": "Blood Pressure",
+  "type": "group",
+  "items": [
+   {
+    "name": "Latest",
+    "type": "info",
+    "content": "{{ states('sensor.blood_pressure_log') | replace('unknown','--') }}"
+   },
+   {
+    "name": "Today",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=0)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   },
+   {
+    "name": "Yesterday",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=1)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   },
+   {
+    "name": "2 days ago",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=2)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   },
+   {
+    "name": "3 days ago",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=3)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   },
+   {
+    "name": "4 days ago",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=4)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   },
+   {
+    "name": "5 days ago",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=5)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   },
+   {
+    "name": "6 days ago",
+    "type": "info",
+    "content": "{% set day = (now() - timedelta(days=6)).date() | string %}{% set r = (state_attr('sensor.blood_pressure_log','readings') or []) | selectattr('t','search','^' ~ day) | list %}{% if r %}{{ (r | map(attribute='s') | sum / r | count) | round(0) | int }}/{{ (r | map(attribute='d') | sum / r | count) | round(0) | int }}{% else %}--{% endif %}"
+   }
+  ]
+ }
+}

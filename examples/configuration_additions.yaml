@@ -1,0 +1,47 @@
+# configuration.yaml additions for the blood pressure log.
+# Merge these under your existing `shell_command:` and `template:` keys
+# (don't create a second `template:` key). Restart Home Assistant afterwards.
+
+# 1. Appends each reading to /config/bp/blood_pressure_log.csv (person1) or
+#    /config/bp/blood_pressure_log_<person>.csv. Never pruned, so it's a complete
+#    history you can open in Excel or share with a doctor. Deliberately NOT in /config/www,
+#    because anything there is readable without logging in.
+shell_command:
+  bp_log_append: >-
+    python3 /config/scripts/bp_log.py
+    "{{ ts }}" "{{ sys }}" "{{ dia }}" "{{ pulse }}" "{{ person | default('person1') }}"
+
+# 2. Rolling 60-day log sensor per person, fed by the automation's `bp_reading` event.
+#    State = newest reading ("126/73"); attributes: last_time, pulse, readings (list of
+#    {t, s, d, p}) used by the dashboard diary and the Garmin watch menu.
+#    Note: the calculation is repeated in each field on purpose; `this` is not available
+#    in trigger-level `variables:`. Delete the person2 block if you have one monitor.
+template:
+  - trigger:
+      - trigger: event
+        event_type: bp_reading
+        event_data:
+          person: person1
+    sensor:
+      - name: "Blood Pressure Log"
+        unique_id: blood_pressure_log
+        icon: mdi:heart-pulse
+        state: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings[-1].s }}/{{ readings[-1].d }}'
+        attributes:
+          last_time: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings[-1].t }}'
+          pulse: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings[-1].p }}'
+          readings: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings }}'
+  - trigger:
+      - trigger: event
+        event_type: bp_reading
+        event_data:
+          person: person2
+    sensor:
+      - name: "Blood Pressure Log Person2"
+        unique_id: blood_pressure_log_person2
+        icon: mdi:heart-pulse
+        state: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings[-1].s }}/{{ readings[-1].d }}'
+        attributes:
+          last_time: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings[-1].t }}'
+          pulse: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings[-1].p }}'
+          readings: '{% set old = (this.attributes.readings if this.attributes is defined and this.attributes.readings is defined else []) | list %}{% set new = {''t'': trigger.event.data.t, ''s'': trigger.event.data.s | int, ''d'': trigger.event.data.d | int, ''p'': trigger.event.data.p | int} %}{% set cutoff = (now() - timedelta(days=60)).isoformat() %}{% set readings = (old | selectattr(''t'', ''ge'', cutoff) | rejectattr(''t'', ''eq'', new.t) | list + [new]) | sort(attribute=''t'') %}{{ readings }}'

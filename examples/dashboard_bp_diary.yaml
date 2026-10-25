@@ -1,0 +1,54 @@
+# Dashboard "diary" for one person (Sections view). Add as a section, or paste the
+# cards into any dashboard via "Add card > Manual".
+#  - Markdown table: today's readings individually (with time), earlier days as one
+#    averaged row ("avg of N"), last 30 days, with pulse.
+#  - Statistics graph: daily mean systolic/diastolic for 30 days. Use YOUR monitor's
+#    systolic/diastolic entities (Settings > Devices & services > A&D Blood Pressure BLE).
+# For a second person, copy the section and change sensor.blood_pressure_log to
+# sensor.blood_pressure_log_person2 (and the graph entities).
+
+type: grid
+cards:
+  - type: heading
+    heading: Blood Pressure
+    heading_style: title
+    icon: mdi:heart-pulse
+  - type: markdown
+    grid_options:
+      columns: 12
+    content: |
+      {%- set rs = state_attr('sensor.blood_pressure_log','readings') or [] -%}
+      {%- set today = now().strftime('%Y-%m-%d') -%}
+      {%- set days = rs | map(attribute='t') | map('truncate', 10, true, '') | unique | sort(reverse=true) | list -%}
+      {%- if rs | count == 0 -%}
+      *No readings yet.*
+      {%- else -%}
+      | Date | Time | Sys / Dia | Pulse |
+      |:--|:--|:--|:--|
+      {%- for d in days[:30] %}
+      {%- set day = rs | selectattr('t','match', d) | list %}
+      {%- set label = 'Today' if d == today else as_datetime(d ~ 'T12:00:00').strftime('%a %b %-d') %}
+      {%- if d == today %}
+      {%- for r in day | sort(attribute='t', reverse=true) %}
+      | {{ label }} | {{ as_datetime(r.t).strftime('%-I:%M %p') }} | **{{ r.s }} / {{ r.d }}** | {{ r.p if r.p is not none else '–' }} |
+      {%- endfor %}
+      {%- else %}
+      {%- set n = day | count %}
+      | {{ label }} | {{ 'avg of ' ~ n if n > 1 else as_datetime(day[0].t).strftime('%-I:%M %p') }} | **{{ (day | map(attribute='s') | sum / n) | round(0) | int }} / {{ (day | map(attribute='d') | sum / n) | round(0) | int }}** | {% set ps = day | map(attribute='p') | reject('none') | list %}{{ ((ps | sum / (ps | count)) | round(0) | int) if ps else '–' }} |
+      {%- endif %}
+      {%- endfor %}
+      {%- endif %}
+  - type: statistics-graph
+    title: Daily average - last 30 days
+    entities:
+      - entity: sensor.YOUR_MONITOR_systolic
+        name: Systolic
+      - entity: sensor.YOUR_MONITOR_diastolic
+        name: Diastolic
+    period: day
+    stat_types:
+      - mean
+    days_to_show: 30
+    chart_type: line
+    grid_options:
+      columns: 12
