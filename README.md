@@ -8,6 +8,8 @@ while Home Assistant couldn't reach the monitor, is delivered as an event you ca
 The UA-651BLE is sold in the US (Amazon, pharmacies) for roughly $50–70. The Medisana
 monitors that the original integration was written for aren't available in the US.
 
+<img src="images/dashboard.png" alt="Blood pressure diary and 30-day graph on a Home Assistant dashboard" width="320">
+
 > Based on [bkbilly/medisanabp_ble](https://github.com/bkbilly/medisanabp_ble) (MIT).
 > The reading decoder and sensor structure are from that project; this version adds
 > what the A&D needs (pairing, burst detection, multi-record delivery). See *What's different*.
@@ -85,6 +87,8 @@ pulse: 69
 | `configuration_additions.yaml` | `shell_command` for the CSV + a rolling 60-day "Blood Pressure Log" sensor per person |
 | `dashboard_bp_diary.yaml` | Diary card (today's readings, then daily averages with pulse) + 30-day graph |
 | `garmin_watch_menu_bp_group.json` | Group for the [GarminHomeAssistant](https://github.com/house-of-abbey/GarminHomeAssistant) watch app: latest reading + 7 daily averages |
+
+<img src="images/watch.jpg" alt="Blood Pressure group in the GarminHomeAssistant app on a Garmin watch" width="320">
 
 ## Troubleshooting
 
