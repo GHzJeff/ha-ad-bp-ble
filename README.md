@@ -20,7 +20,7 @@ monitor's own display and your doctor.
 | Item | Notes |
 |---|---|
 | A&D UA-651BLE | Uses the standard Bluetooth Blood Pressure service (0x1810). Other A&D BLE models may work but are untested. |
-| An **ESPHome Bluetooth proxy** (any ESP32, ~$10) | **Required.** Home Assistant's built-in Bluetooth (BlueZ) can't pair with this monitor (`AuthenticationFailed`), but ESPHome proxies pair fine. Use the official [ESPHome Bluetooth proxy](https://esphome.github.io/bluetooth-proxies/) firmware. |
+| An **ESPHome Bluetooth proxy** (any ESP32, ~$10) | **Required.** In my testing, the HA box's built-in Bluetooth (an Intel AX201 adapter, via BlueZ) couldn't pair with this monitor (`AuthenticationFailed`), but ESPHome proxies pair fine. Use the official [ESPHome Bluetooth proxy](https://esphome.github.io/bluetooth-proxies/) firmware. |
 | Home Assistant | Tested on 2026.10. |
 
 **Place the proxy within 3-6 feet of where you take readings**, closer than any other
