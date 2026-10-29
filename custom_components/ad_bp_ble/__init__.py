@@ -44,6 +44,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     assert address is not None
     data = MedisanaBPBluetoothDeviceData()
 
+    def _proxy_hears(addr: str) -> bool:
+        """True if an ESPHome proxy (not a local adapter) currently hears addr.
+
+        Only the proxy can pair with the monitor. If HA connects before the proxy
+        has reported the advertisement, it tries hci0 alone, burns ~20 s failing,
+        and the monitor stops advertising before the proxy gets a turn.
+        """
+        try:
+            from homeassistant.components.bluetooth import (
+                async_scanner_devices_by_address,
+            )
+
+            return any(
+                "path" not in (getattr(d.ble_device, "details", None) or {})
+                for d in async_scanner_devices_by_address(hass, addr, True)
+            )
+        except Exception:  # private-ish API; don't block polling if it changes
+            return True
+
     def _needs_poll(
         service_info: BluetoothServiceInfoBleak, last_poll: float | None
     ) -> bool:
@@ -52,6 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return (
             hass.state is CoreState.running
             and data.poll_needed(service_info, last_poll)
+            and _proxy_hears(service_info.device.address)
             and bool(
                 service_info.connectable
                 or async_ble_device_from_address(
@@ -109,6 +129,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             raise RuntimeError(
                 f"No connectable device found for {service_info.device.address}"
             )
+        if not _proxy_hears(service_info.device.address):
+            raise RuntimeError(
+                f"{service_info.device.address}: no ESPHome proxy hears it yet"
+            )
         _prefer_proxy_path(service_info.device.address)
         update = await data.async_poll(
             connectable_device,
@@ -161,6 +185,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         now = monotonic_time_coarse()
         if now - seen > FRESH_SECONDS:
             return
+        if not _proxy_hears(address):
+            return  # wait (up to one CHECK_INTERVAL) for the proxy to report it
         if burst["polled"] == burst["start"] and data._last_poll_successful:
             return
         if now - burst["attempt"] < RETRY_SECONDS:

@@ -61,7 +61,7 @@ sensor → ⚙ → set *Unit of measurement* to **mmHg**.
 | Expects the host to set its clock | Writes the current time to the Date Time characteristic (0x2A08) |
 | Only advertises briefly after a reading, and the advertisement **never changes**, so HA's change-driven polling never fires | A 5-second watcher polls once per advertising burst (uses HA's last-seen time) |
 | Sends every stored reading in one session | Fires one `ad_bp_ble_reading` event **per reading**, so offline readings aren't lost |
-| HA's local adapter fails to pair, then gets preferred anyway | Steers the connection to the ESPHome proxy that holds the bond |
+| HA's local adapter fails to pair, then gets preferred anyway; if it hears the monitor first, it burns the short advertising window | Waits until an ESPHome proxy hears the monitor (at most ~5 s), then steers the connection to the proxy that holds the bond |
 
 Uses a couple of private Home Assistant Bluetooth internals (the coordinator's poll
 debouncer and scanner failure counts), so a future HA release could require an update.
